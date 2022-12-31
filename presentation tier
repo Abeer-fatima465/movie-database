@@ -1,0 +1,199 @@
+
+#
+# Program to analyze data from MovieLens database.
+# This is a simplified version of the program for Project 02,
+# and works mainly with Movies, Movie Taglines, Ratings, Genres and Movie Production Companies; console-based only,
+#
+# Original author:
+#   Prof. Joe Hummel
+#   U. of Illinois, Chicago
+#   CS 341, Spring 2022
+#
+# References:
+#  learning python: https://www.w3schools.com/python/
+#  sqlite programming: https://docs.python.org/3/library/sqlite3.html
+#
+import sqlite3
+import objecttier
+
+
+##################################################################
+#
+# retrieve movie name
+#
+def movie_Name(dbConn):
+  print()
+  user_input = input("Enter movie name (wildcards _ and % supported): ")
+  print()
+
+
+  movie_name = objecttier.get_movies(dbConn,user_input)
+  print('# of movies found:', len(movie_name))
+  print()
+  # error check
+  if len(movie_name) < 0:
+    print("No such movie exists. Please try again: ")
+    print()
+  elif len(movie_name) >= 101:
+    print("There are too many movies to display, please narrow your search and try again...")
+    print()
+    return
+
+  
+  for row in movie_name:
+    print(row.Movie_ID, ':', row.Title, f'({row.Release_Year})')
+  print()
+
+##################################################################
+
+#retrive movie IDs 
+def movie_id(dbConn):
+  print()
+  user = input("Enter movie id: ")
+  print()
+  info = objecttier.get_movie_details(dbConn,user)
+
+  #error check
+  if info == None:
+    print("No such movie...")
+    return
+
+  #for m in info:
+  print(info.Movie_ID, ':', info.Title)
+  print('  Release date:', info.Release_Date)
+  print('  Runtime:', info.Runtime, '(mins)')
+  print('  Orig language:', info.Original_Language)
+  print('  Budget:', f'${info.Budget:,} (USD)')
+  print('  Revenue:', f'${info.Revenue:,} (USD)')
+  print('  Num reviews:', info.Num_Reviews)
+  print('  Avg rating:', f'{info.Avg_Rating:.2f} (0..10)')
+  
+  print('  Genres:', end='')
+  for genre in info.Genres:
+    print(' ' + genre + ',', end='')
+  print()
+  print('  Production companies:', end='')
+  for company in info.Production_Companies:
+    print(' ' + company + ',', end='')
+  print()
+  print('  Tagline:', info.Tagline)
+  print()
+
+##################################################################
+
+# retrive top_N_Movies
+def top_movies(dbConn):
+  print()
+  n = input('N? ')
+  
+  if int(n) < 1:
+    print('Please enter a positive value for N...')
+    return
+  n2 = input("min number of reviews? ")
+
+  
+  if int(n2) <= 0:
+    print('Please enter a positive value for min number of reviews...')
+    #print()s
+    return
+    
+  top = objecttier.get_top_N_movies(dbConn, int(n), int(n2))
+  print()
+  for t in top:
+    print(t.Movie_ID, ':', 
+          t.Title, f'({t.Release_Year}),',
+          f'avg rating = {t.Avg_Rating:.2f}', 
+          f'({t.Num_Reviews} reviews)')
+    
+  
+##################################################################
+
+#add new review
+def new_review(dbConn):
+  print()
+  rating = float(input("Enter rating (0..10): "))
+  errorCheck = 10
+  
+  if (rating < 0):
+    print("Invalid rating...")
+    #print()
+    return
+  elif (rating > errorCheck):
+    print("Invalid rating...")
+    #print()
+    return
+    
+  movie = input("Enter movie id: \n")
+  res = objecttier.add_review(dbConn, movie, rating)
+
+  if res == 0:
+    print("No such movie...")
+    return 
+  else:
+    print("Review successfully inserted")
+
+##################################################################
+#add tagline
+def add_tag(dbConn):
+  print()
+  tag = input("tagline? ")
+  movie = input("movie id? \n")
+  res = objecttier.set_tagline(dbConn, movie, tag)
+  if res == 0:
+    print("No such movie...")
+  else:
+    print("Tagline successfully set")
+  print()
+
+  
+  
+
+##################################################################
+#
+# main
+#
+dbConn = sqlite3.connect('MovieLens.db')
+print('** Welcome to the MovieLens app **')
+print()
+numMovies = objecttier.num_movies(dbConn)
+numReviews = objecttier.num_reviews(dbConn) 
+print('General stats:')
+print('  # of movies:', f'{numMovies:,}')
+print('  # of reviews:', f'{numReviews:,}')
+print()
+
+user_input = input('Please enter a command (1-5, x to exit): ')
+
+# command = [1, 2, 3, 4, 5];
+# match command:
+#   case [1]:
+#     movie_Name(dbConn)
+#   case [2]:
+#     movie_id(dbConn)
+#   case [3]:
+#     top_movies(dbConn)
+#   case [4]:
+#    new_reviews(dbConn)
+#   case [5]:
+#    add_tag(dbConn)
+#   case _:
+#    exit(0)
+
+
+while not user_input == 'x':
+  if user_input == '1':
+    movie_Name(dbConn)
+  elif user_input == '2':
+    movie_id(dbConn)
+  elif user_input == '3':
+    top_movies(dbConn)
+  elif user_input == '4':
+   new_review(dbConn)
+  elif user_input == '5':
+   add_tag(dbConn)  
+  print();
+  user_input = input('Please enter a command (1-5, x to exit): ')
+  
+#
+# done
+#
